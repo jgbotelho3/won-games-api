@@ -19,6 +19,10 @@
       "type": "uid",
       "targetField": "publisher",
       "required": true
+    },
+    "games": {
+      "via": "publisher",
+      "collection": "game"
     }
   }
 }
