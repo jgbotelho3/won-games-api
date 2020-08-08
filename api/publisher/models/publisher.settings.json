@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "publishers",
+  "info": {
+    "name": "publisher"
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true
+  },
+  "attributes": {
+    "publisher": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "regex": "nada adicionado ao envio mas arquivos não registrados estão presentes (use \"git add\" to registrar)"
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "publisher",
+      "required": true
+    }
+  }
+}
