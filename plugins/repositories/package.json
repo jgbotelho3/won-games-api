@@ -7,17 +7,13 @@
     "icon": "code",
     "description": "A list of our repositories."
   },
-  "dependencies": {},
   "author": {
-    "name": "A Strapi developer",
-    "email": "",
-    "url": ""
+    "name": "A Strapi developer"
+  
   },
   "maintainers": [
     {
-      "name": "A Strapi developer",
-      "email": "",
-      "url": ""
+      "name": "A Strapi developer"
     }
   ],
   "engines": {
