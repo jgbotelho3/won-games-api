@@ -6,6 +6,7 @@
  */
 
 const axios = require("axios");
+const slugify = require("slugify");
 
 async function getGameInfo(slug) {
   const jsdom = require("jsdom");
@@ -29,14 +30,92 @@ async function getGameInfo(slug) {
 
 }
 
+async function getByName(name,  entityName) {
+  const item = await strapi.services[entityName].find({name})
+
+  return item.length ? item[0] : null;
+}
+
+async function create(name, entityName){
+  const item = await getByName(name, entityName);
+
+  if(!item){
+    return await strapi.services[entityName].create({
+      name,
+      slug: slugify(name, {lower: true}),
+    });
+  }
+}
+
+async function createManyToManyData(products){
+  const developers = {};
+  const publishers = {};
+  const categories = {};
+  const platforms = {};
+
+  products.forEach((product) =>{
+    const { developer, publisher, genres, supportedOperatingSystems} = product;
+
+    genres &&
+      genres.forEach((item) => {
+        categories[item] = true;
+      });
+      supportedOperatingSystems &&
+      supportedOperatingSystems.forEach((item) =>{
+        platforms[item] = true;
+      });
+    developers[developer] = true;
+    publishers[publisher] = true;
+  });
+
+  return Promise.all([
+    ...Object.keys(developers).map((name) => create(name, "developer")),
+    ...Object.keys(publishers).map((name) => create(name, "publisher")),
+    ...Object.keys(categories).map((name) => create(name, "category")),
+    ...Object.keys(platforms).map((name) => create(name, "platform")),
+  ]);
+}
+
+async function createGames(products){
+  await Promise.all(
+    products.map(async (product) =>{
+      const item = await getByName(product.title, "game");
+
+      const game = await strapi.services.game.create({
+        name: product.title,
+        slug: product.slug.replace(/_/g, "-"),
+        price: product.price.amount,
+        release_date: new Date(
+          Number(product.globalReleaseDate) * 1000
+        ).toISOString(),
+        categories: await Promise.all(
+          product.genres.map((name) => getByName(name, "category"))
+        ),
+        platforms: await Promise.all(
+          product.supportedOperatingSystems.map((name) => getByName(name, "platform"))
+        ),
+        developers: [await getByName(product.developer, "developer")],
+        publisher: await getByName(product.publisher, "publisher"),
+        ...(await getGameInfo(product.slug))
+      });
+
+      return game;
+    })
+
+  );
+}
+
 module.exports = {
   populate: async (params) => {
     const gogApiUrl = `https://www.gog.com/games/ajax/filtered?mediaType=game&page=1&sort=popularity`
 
     const { data: { products } } = await axios.get(gogApiUrl)
+    // await create(products[1].publisher, "publisher");
+    // await create(products[1].developer, "developer");
+    // await createManyToManyData([products[2], products[3]]);
 
-    // console.log(products[2].slug);
-
-   console.log(await getGameInfo(products[2].slug));
+    // console.log(await getByName("CD PROJEKT RED", "publisher"));
+    await createGames([products[2], products[3]]);
+  //  console.log(await getGameInfo(products[2].slug));
   }
 };
